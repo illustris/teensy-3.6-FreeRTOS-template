@@ -110,9 +110,13 @@ OBJCOPY = $(abspath $(COMPILERPATH))/arm-none-eabi-objcopy
 SIZE = $(abspath $(COMPILERPATH))/arm-none-eabi-size
 
 # automatically create lists of the sources and objects
-LC_FILES := $(wildcard $(LIBRARYPATH)/*/*.c)
-LCPP_FILES := $(wildcard $(LIBRARYPATH)/*/*.cpp)
+LC_FILES := $(shell find $(LIBRARYPATH) -name '*.c')
+# LC_FILES := $(wildcard $(LIBRARYPATH)/*/*.c)
+LCPP_FILES := $(shell find $(LIBRARYPATH) -name '*.cpp')
+#LCPP_FILES := $(wildcard $(LIBRARYPATH)/*/*.cpp)
+#LC_FILES := $(shell find $(LIBRARYPATH) -name '*.c')
 TC_FILES := $(wildcard $(COREPATH)/*.c)
+#LC_FILES := $(shell find $(LIBRARYPATH) -name '*.c')
 TCPP_FILES := $(wildcard $(COREPATH)/*.cpp)
 C_FILES := $(wildcard src/*.c)
 CPP_FILES := $(wildcard src/*.cpp)
@@ -122,7 +126,8 @@ FREERTOS_FILES = $(wildcard $(FREERTOSPATH)/*.c)
 FREERTOS_FILES += $(wildcard $(FREERTOSPATH)/$(FREERTOSPORT)/*.c)
 
 # include paths for libraries
-L_INC := $(foreach lib,$(filter %/, $(wildcard $(LIBRARYPATH)/*/)), -I$(lib))
+#L_INC := $(foreach lib,$(filter %/, $(wildcard $(LIBRARYPATH)/*/)), -I$(lib))
+L_INC := $(foreach lib,$(filter %, $(shell find $(LIBRARYPATH) -type d)), -I$(lib))
 
 SOURCES := $(C_FILES:.c=.o) $(CPP_FILES:.cpp=.o) $(INO_FILES:.ino=.o) $(TC_FILES:.c=.o) $(TCPP_FILES:.cpp=.o) $(LC_FILES:.c=.o) $(LCPP_FILES:.cpp=.o) $(FREERTOS_FILES:.c=.o)
 OBJS := $(foreach src,$(SOURCES), $(BUILDDIR)/$(src))
