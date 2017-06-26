@@ -46,7 +46,7 @@ void testDelayMS(uint32_t millis) {
 void LEDTask(void* args) {
   pinMode(ledPin, OUTPUT);
   msg.ext = 0;
-  msg.id = 0x01;
+  msg.id = 0x02;
   msg.len = 8;
   msg.buf[0] = 0;
   msg.buf[1] = 'n';
@@ -55,21 +55,21 @@ void LEDTask(void* args) {
   msg.buf[4] = 'e';
   msg.buf[5] = ':';
   msg.buf[6] = ' ';
-  msg.buf[7] = '1';
+  msg.buf[7] = '2';
   Can0.begin(1000000);
   Can0.attachObj(&canListener1);
   canListener1.attachMBHandler(0);
 
   CAN_filter_t filter;
   // Framehandler invoked only for id 560
-  filter.id=0x03;
+  filter.id=0x01;
   filter.flags.extended=0;
   filter.flags.remote=0;
   filter.flags.reserved=0;
   Can0.setFilter(filter,0);
   Can0.setMask(0x1FFFFFFF,0);
-  Can0.write(msg);
-  
+  //Can0.write(msg);
+
   for(;;){
 //    if (counter++ % 2) {
 //      digitalWrite(ledPin, LOW);
