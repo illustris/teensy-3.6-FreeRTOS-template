@@ -1,84 +1,133 @@
-// -------------------------------------------------------------------------------------------
-// I2C Bus Scanner
-// -------------------------------------------------------------------------------------------
-//
-// This creates an I2C master device which will scan the address space and report all
-// devices which ACK.  It does not attempt to transfer data, it only reports which devices
-// ACK their address.
-//
-// Pull the control pin low to initiate the scan.  Result will output to Serial.
-//
-// This example code is in the public domain.
-// -------------------------------------------------------------------------------------------
-#include <i2c_t3.h>
+#include <kinetis.h>
+#include <stdlib.h>
 
-#define Serial Serial1
-// Function prototypes
-void print_scan_status(uint8_t target, uint8_t all);
+#include <FreeRTOS.h>
+#include <task.h>
 
-uint8_t found, target, all;
+// extern tasks declared elsewhere in program
+void LEDTask(void* args);
+void SerialTask(void* args);
+void SensorTask(void* args);
 
-void setup()
+int main() {
+  // create the tasks
+  xTaskCreate(LEDTask, "LT", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  xTaskCreate(SerialTask, "ST", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+  xTaskCreate(SensorTask,"SsT",configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+
+  // start scheduler, main should stop functioning here
+  vTaskStartScheduler();
+
+  for(;;);
+
+  return 0;
+}
+
+/*
+// FreeRTOS malloc port function
+void* pvPortMalloc(size_t size) {
+  return malloc(size);
+}
+
+// FreeRTOS free port function
+void vPortFree(void* ptr) {
+  free(ptr);
+}
+*/
+
+/*
+#include "WProgram.h"
+#include <FlexCAN.h>
+
+#ifndef __MK66FX1M0__
+  #error "Teensy 3.6 with dual CAN bus is required to run this example"
+#endif
+
+FlexCAN CANbus0(250000, 0);
+FlexCAN CANbus1(250000, 1);
+
+static CAN_message_t msg;
+static uint8_t hex[17] = "0123456789abcdef";
+
+
+// -------------------------------------------------------------
+static void hexDump(uint8_t dumpLen, uint8_t *bytePtr)
 {
-    pinMode(LED_BUILTIN,OUTPUT);    // LED
-    pinMode(12,INPUT_PULLUP);       // pull pin 12 low to show ACK only results
-    pinMode(11,INPUT_PULLUP);       // pull pin 11 low for a more verbose result (shows both ACK and NACK)
-
-    // Setup for Master mode, pins 18/19, external pullups, 400kHz, 10ms default timeout
-    Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, 1000000);
-    Wire.setDefaultTimeout(10000); // 10ms
-
-    Serial.begin(115200);
+  uint8_t working;
+  while( dumpLen-- ) {
+    working = *bytePtr++;
+    Serial.write( hex[ working>>4 ] );
+    Serial.write( hex[ working&15 ] );
+  }
+  Serial.write('\r');
+  Serial.write('\n');
 }
 
-void loop()
+extern "C" int main(void)
 {
-    // Scan I2C addresses
-    //
-    if(digitalRead(12) == LOW || digitalRead(11) == LOW || 1)
-    {
-        all = (digitalRead(11) == LOW) && 0;
-        found = 0;
-        
-        Serial.print("---------------------------------------------------\n");
-        Serial.print("Starting scan...\n");
-        digitalWrite(LED_BUILTIN,HIGH); // LED on
-        for(target = 1; target <= 0x7F; target++) // sweep addr, skip general call
-        {
-            Wire.beginTransmission(target);       // slave addr
-            Wire.endTransmission();               // no data, just addr
-            print_scan_status(target, all);
-        }
-        digitalWrite(LED_BUILTIN,LOW); // LED off
+#ifdef USING_MAKEFILE
 
-        if(!found) Serial.print("No devices found.\n");
-        
-        delay(100); // delay to space out tests
-    }
+uint8_t msgCnt = 0;
+
+  CANbus0.begin();
+  CANbus1.begin();
+
+  delay(1000);
+  Serial.println(F("Hello Teensy 3.6 dual CAN Test."));
+
+	pinMode(13, OUTPUT);
+
+	while (1) {
+		digitalWriteFast(13, HIGH);
+		delay(500);
+		digitalWriteFast(13, LOW);
+		delay(500);
+
+
+    msg.id = 0x18FEEF80;
+    msg.ext = 1;
+    msg.len = 8;
+    msg.timeout = 0; // milliseconds, zero will disable waiting
+    msg.buf[0] = msgCnt;
+    msg.buf[1] = msgCnt;
+    msg.buf[2] = msgCnt;
+    msg.buf[3] = msgCnt;
+    msg.buf[4] = msgCnt;
+    msg.buf[5] = msgCnt;
+    msg.buf[6] = msgCnt;
+    msg.buf[7] = msgCnt;
+    msgCnt++;
+
+    CANbus0.write(msg);
+    CANbus1.write(msg);
+
+  if(CANbus0.available()) 
+  {
+    CANbus0.read(msg);
+    Serial.print("CAN bus 0: "); hexDump(8, msg.buf);
+    CANbus1.write(msg);
+  }
+
+  if(CANbus1.available()) 
+  {
+    CANbus1.read(msg);
+    Serial.print("CAN bus 1: "); hexDump(8, msg.buf);
+    CANbus0.write(msg);
+  }
+
+
+	}
+
+
+#else
+	// Arduino's main() function just calls setup() and loop()....
+	setup();
+	while (1) {
+		loop();
+		yield();
+	}
+#endif
 }
+*/
 
-//
-// print scan status
-//
-void print_scan_status(uint8_t target, uint8_t all)
-{
-    switch(Wire.status())
-    {
-    case I2C_WAITING:  
-        Serial.printf("Addr: 0x%02X ACK\n", target);
-        found = 1;
-        break;
-    case I2C_ADDR_NAK: 
-        if(all) Serial.printf("Addr: 0x%02X\n", target); 
-        break;
-    default:
-        break;
-    }
-}
 
-int main(){
-
-setup();
-loop();
-	return 0;
-}
